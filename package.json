@@ -1,0 +1,56 @@
+{
+  "name": "dsh-session-delete",
+  "version": "1.0.0",
+  "description": "Adds a real “delete session” action to DeepSeek Harness — removes the log, the workspace account and the cached title instead of only archiving the row.",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "assets",
+    "screenshots.json",
+    "README.md",
+    "README.zh.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "deepseek",
+    "session",
+    "delete",
+    "conversation"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OWNER/dsh-session-delete.git"
+  },
+  "homepage": "https://github.com/OWNER/dsh-session-delete#readme",
+  "bugs": {
+    "url": "https://github.com/OWNER/dsh-session-delete/issues"
+  },
+  "engines": {
+    "node": "^22.19 || >=24"
+  },
+  "scripts": {
+    "test": "node test-host.mjs && node test-client.mjs"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": []
+    }
+  }
+}

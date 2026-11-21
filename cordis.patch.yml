@@ -1,0 +1,9 @@
+# dsh-session-delete bundle patch.
+#
+# One row, named exactly like the package: dsh-client-modules mounts a package's
+# browser half on the row whose specifier is the bare package name, so `client.js`
+# (declared in package.json's `dsh.client`) loads against this row.
+- insert:
+    - id: session-delete
+      name: 'dsh-session-delete'
+      config: {}
