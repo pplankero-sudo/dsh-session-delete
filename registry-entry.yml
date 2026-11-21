@@ -1,0 +1,7 @@
+url: https://github.com/OWNER/dsh-session-delete
+name: OWNER/dsh-session-delete
+category: session
+icon: https://raw.githubusercontent.com/OWNER/dsh-session-delete/main/assets/icon-180.png
+description:
+  en: 'Adds a delete action to the Session menu: it removes the log directory, the workspace account and the cached title, refusing a session that is still running.'
+  zh: '给会话菜单加上删除动作：同时清除日志目录、工作区索引与标题缓存；正在运行的会话会被拒绝。'

@@ -1,0 +1,1 @@
+Adds the delete action DSH's Session menu does not have
