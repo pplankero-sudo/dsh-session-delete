@@ -31,11 +31,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/OWNER/dsh-session-delete.git"
+    "url": "git+https://github.com/pplankero-sudo/dsh-session-delete.git"
   },
-  "homepage": "https://github.com/OWNER/dsh-session-delete#readme",
+  "homepage": "https://github.com/pplankero-sudo/dsh-session-delete#readme",
   "bugs": {
-    "url": "https://github.com/OWNER/dsh-session-delete/issues"
+    "url": "https://github.com/pplankero-sudo/dsh-session-delete/issues"
   },
   "engines": {
     "node": "^22.19 || >=24"

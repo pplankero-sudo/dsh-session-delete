@@ -26,7 +26,7 @@ DSH 的会话菜单只有置顶、重命名、分叉、复制 ID、归档。归�
 ## 安装
 
 ```sh
-dsh plugin add https://github.com/OWNER/dsh-session-delete
+dsh plugin add https://github.com/pplankero-sudo/dsh-session-delete
 ```
 
 也可以手工加进 profile——包声明了 `dsh.bundle` manifest，两条路都通：

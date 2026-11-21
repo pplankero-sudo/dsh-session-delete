@@ -26,7 +26,7 @@ The archive and pin sets are cleaned in the same pass; a stale id left in either
 ## Install
 
 ```sh
-dsh plugin add https://github.com/OWNER/dsh-session-delete
+dsh plugin add https://github.com/pplankero-sudo/dsh-session-delete
 ```
 
 Or add it to a profile by hand — the package declares a `dsh.bundle` manifest, so both paths work:
