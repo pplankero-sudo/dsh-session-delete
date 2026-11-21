@@ -251,11 +251,56 @@ export function apply(ctx) {
   }
 
   /**
+   * Admit only a request this Host page itself could have sent.
+   *
+   * A deleting endpoint must not be reachable from a document it did not render:
+   * a `text/plain` POST is a CORS "simple request", so an arbitrary web page can
+   * fire one at `127.0.0.1` without a preflight and the browser will deliver it.
+   * Two checks close that:
+   *
+   *   1. `Origin`, when present, must match this request's own authority. A
+   *      browser always attaches it to a cross-origin POST, and a foreign value
+   *      is exactly the case to refuse. Requests with no `Origin` — curl, our own
+   *      tests — are not browser-driven and cannot be forged by a web page.
+   *   2. `Sec-Fetch-Site`, when present, must not say `cross-site`.
+   *
+   * This is deliberately not a full CSRF token: the route stays usable from the
+   * app without a client-side dance, while a page on another origin gets 403
+   * instead of a deleted conversation.
+   * @param {import('node:http').IncomingMessage} req
+   * @returns {string | undefined} refusal text, or undefined when admitted.
+   */
+  function admitOrigin(req) {
+    const host = req.headers.host
+    const origin = req.headers.origin
+    if (typeof origin === 'string' && origin !== '' && origin !== 'null') {
+      let originHost
+      try {
+        originHost = new URL(origin).host
+      } catch {
+        return 'malformed Origin'
+      }
+      if (typeof host !== 'string' || originHost !== host) return 'cross-origin request refused'
+    }
+    const site = req.headers['sec-fetch-site']
+    if (typeof site === 'string' && site === 'cross-site') return 'cross-site request refused'
+    return undefined
+  }
+
+  /**
    * @param {import('node:http').IncomingMessage} req
    * @param {import('node:http').ServerResponse} res
    */
   async function route(req, res) {
     try {
+      const refusal = admitOrigin(req)
+      if (refusal !== undefined) {
+        logger?.warn?.(`dsh-session-delete: refused ${req.method ?? '?'} ${req.url ?? '?'} — ${refusal}`)
+        res.writeHead(403, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' })
+        res.end(refusal)
+        return
+      }
+
       const url = new URL(req.url ?? '/', 'http://localhost')
       const queryId = url.searchParams.get('id') ?? ''
       if (req.method === 'GET') {
@@ -267,6 +312,12 @@ export function apply(ctx) {
         res.writeHead(405, { allow: 'GET, POST', 'content-type': 'text/plain; charset=utf-8' })
         res.end('method not allowed')
         return
+      }
+      // A destructive POST must be JSON. Combined with the Origin check above,
+      // this also means a cross-origin caller needs a preflight it will fail.
+      const contentType = String(req.headers['content-type'] ?? '')
+      if (!contentType.toLowerCase().includes('application/json')) {
+        return json(res, 415, { error: 'content-type must be application/json' })
       }
       const body = await readBody(req)
       const sessionId = String(body.sessionId ?? body.id ?? '')

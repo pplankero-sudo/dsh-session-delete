@@ -48,10 +48,10 @@ const mod = await import('file:///F:/OneDrive/文档/deepseek-harness/default-wo
 mod.apply(ctx)
 
 // --- exercise the route through a fake req/res ------------------------------
-function callRoute(method, url, body) {
+function callRoute(method, url, body, headers = {}) {
   const req = Object.assign(
-    (async function* () { if (body !== undefined) yield Buffer.from(JSON.stringify(body)) })(),
-    { method, url },
+    (async function* () { if (body !== undefined) yield Buffer.from(typeof body === 'string' ? body : JSON.stringify(body)) })(),
+    { method, url, headers: { host: '127.0.0.1:58974', ...headers } },
   )
   const res = {
     status: 0, headers: {}, payload: '',
@@ -71,7 +71,7 @@ console.log('GET inspect:', before.status, JSON.stringify({
   workspaceIds: beforeBody.workspaceIds, cache: beforeBody.hasProjectionCache,
 }))
 
-const del = await callRoute('POST', '/api/dsh-session-delete', { sessionId: SID })
+const del = await callRoute('POST', '/api/dsh-session-delete', { sessionId: SID }, { 'content-type': 'application/json' })
 const delBody = JSON.parse(del.payload)
 console.log('POST delete:', del.status, 'clean=' + delBody.clean, 'removed=' + delBody.removed.map(r => r.step).join(','))
 
@@ -90,8 +90,32 @@ if (calls.detach !== 1) problems.push('detach not called once')
 if (del.status !== 200) problems.push('delete status ' + del.status)
 if (JSON.parse(after.payload).exists !== false) problems.push('inspect after delete still reports exists')
 
-const bad = await callRoute('POST', '/api/dsh-session-delete', { sessionId: '../../etc/passwd' })
+const bad = await callRoute('POST', '/api/dsh-session-delete', { sessionId: '../../etc/passwd' }, { 'content-type': 'application/json' })
 if (bad.status !== 400) problems.push('path traversal not rejected: ' + bad.status)
+
+// --- CSRF / cross-origin fences ---------------------------------------------
+// Rebuild a fixture, then try the three ways a foreign page could reach it.
+const SID2 = 'session-99999999-8888-7777-6666-555555555555'
+fs.mkdirSync(path.join(home, 'sessions', slug, SID2), { recursive: true })
+
+const crossOrigin = await callRoute('POST', '/api/dsh-session-delete',
+  { sessionId: SID2 }, { 'content-type': 'application/json', origin: 'https://evil.example' })
+if (crossOrigin.status !== 403) problems.push('cross-origin POST not refused: ' + crossOrigin.status)
+if (!fs.existsSync(path.join(home, 'sessions', slug, SID2))) problems.push('cross-origin refused but log was deleted anyway')
+
+const crossSite = await callRoute('POST', '/api/dsh-session-delete',
+  { sessionId: SID2 }, { 'content-type': 'application/json', 'sec-fetch-site': 'cross-site' })
+if (crossSite.status !== 403) problems.push('cross-site POST not refused: ' + crossSite.status)
+
+const plainText = await callRoute('POST', '/api/dsh-session-delete',
+  { sessionId: SID2 }, { 'content-type': 'text/plain' })
+if (plainText.status !== 415) problems.push('non-JSON content-type not refused: ' + plainText.status)
+
+// Same-origin with the matching Origin header must still work.
+const sameOrigin = await callRoute('POST', '/api/dsh-session-delete',
+  { sessionId: SID2 }, { 'content-type': 'application/json', origin: 'http://127.0.0.1:58974' })
+if (sameOrigin.status !== 200) problems.push('same-origin POST refused: ' + sameOrigin.status)
+if (fs.existsSync(path.join(home, 'sessions', slug, SID2))) problems.push('same-origin POST did not delete')
 
 console.log(problems.length === 0 ? '\nRESULT: PASS' : '\nRESULT: FAIL\n - ' + problems.join('\n - '))
 fs.rmSync(home, { recursive: true, force: true })
